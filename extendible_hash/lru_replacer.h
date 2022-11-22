@@ -32,7 +32,7 @@ namespace scudb {
         shared_ptr<Node> head;
         shared_ptr<Node> tail;
         unordered_map<T, shared_ptr<Node>> map;
-        mutable mutex latch;    //ÔÚÕâÀïÌí¼Ó³ÉÔ±±äÁ¿
+        mutable mutex latch;    //åœ¨è¿™é‡Œæ·»åŠ æˆå‘˜å˜é‡
     };
 
 }
