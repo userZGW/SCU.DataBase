@@ -4,40 +4,40 @@
 using namespace std;
 
 namespace scudb {
-    template <typename K, typename V>
-    ExtendibleHash<K, V>::ExtendibleHash(size_t size) : global_depth(0), bucket_size(size), bucket_num(1) {
-        buckets.push_back(make_shared<Bucket>(0));
-    }
+     template <typename K, typename V>
+     ExtendibleHash<K, V>::ExtendibleHash(size_t size) {
+     global_depth = 0;
+     bucket_size = size;
+     bucket_number = 1;
+     buckets.push_back(make_shared<Bucket>(0));
+     }
+    
     template<typename K, typename V>
     ExtendibleHash<K, V>::ExtendibleHash() {
-        ExtendibleHash(64);     //¹Ì¶¨Ã¿¸öÍ°µÄÊı×é´óĞ¡
+    ExtendibleHash(64);   //å›ºå®šæ¯ä¸ªæ¡¶çš„æ•°ç»„å¤§å°
     }
 
     template <typename K, typename V>
     size_t ExtendibleHash<K, V>::HashKey(const K& key) const {
-        return hash<K>{}(key);     //°ïÖúº¯Êı¼ÆËãÊäÈë¼üµÄ¹şÏ£µØÖ·
+        return hash<K>{}(key);     //å¸®åŠ©å‡½æ•°è®¡ç®—è¾“å…¥é”®çš„å“ˆå¸Œåœ°å€
     }
 
     template <typename K, typename V>
     int ExtendibleHash<K, V>::GetGlobalDepth() const {
         lock_guard<mutex> lock(latch);
-        return global_depth;   //·µ»Ø¹şÏ£±íÈ«¾ÖÉî¶È
+        return global_depth;   //è¿”å›å“ˆå¸Œè¡¨å…¨å±€æ·±åº¦
     }
 
     template <typename K, typename V>
-    int ExtendibleHash<K, V>::GetLocalDepth(int bucket_id) const {
-        if (buckets[bucket_id]) {
-            lock_guard<mutex> lck(buckets[bucket_id]->latch);
-            if (buckets[bucket_id]->kmap.size() == 0) return -1;
-            return buckets[bucket_id]->local_depth;     //·µ»Ø¸ÃÍ°µÄ¾Ö²¿Éî¶È
-        }
-        return -1;
+    int ExtendibleHash<K, V>::GetGlobalDepth() const {
+    lock_guard<mutex> lock(latch_table);
+        return global_depth;   //è¿”å›è¯¥æ¡¶çš„å±€éƒ¨æ·±åº¦
     }
 
     template <typename K, typename V>
     int ExtendibleHash<K, V>::GetNumBuckets() const {
         lock_guard<mutex> lock(latch);
-        return bucketNum;      //·µ»Ø¹şÏ£±íÖĞÍ°µÄµ±Ç°±àºÅ
+        return bucketNum;      //è¿”å›å“ˆå¸Œè¡¨ä¸­æ¡¶çš„å½“å‰ç¼–å·
     }
 
     template <typename K, typename V>
@@ -46,7 +46,7 @@ namespace scudb {
         int idx = getIdx(key);
         lock_guard<mutex> lck(buckets[idx]->latch);
         if (buckets[idx]->kmap.find(key) != buckets[idx]->kmap.end()) {
-            value = buckets[idx]->kmap[key];       //²éÕÒÓëÊäÈë¼üÏà¹ØµÄÖµ
+            value = buckets[idx]->kmap[key];       //æŸ¥æ‰¾ä¸è¾“å…¥é”®ç›¸å…³çš„å€¼
             return true;
 
         }
@@ -67,7 +67,7 @@ namespace scudb {
         if (cur->kmap.find(key) == cur->kmap.end()) {
             return false; 
         }
-        cur->kmap.erase(key);      //É¾³ı¹şÏ£±íÖĞ<key,value>µÄÌõÄ¿
+        cur->kmap.erase(key);      //åˆ é™¤å“ˆå¸Œè¡¨ä¸­<key,value>çš„æ¡ç›®
         return true;
     }
 
@@ -95,7 +95,7 @@ namespace scudb {
                     global_depth++;
 
                 }
-                bucket_num++;       //µ±ÓĞÒç³öÊ±£¬²ğ·Ö²¢ÖØĞÂ·ÖÅäÍ°£¬ÈçÓĞ±ØÒªÔö¼ÓÈ«¾ÖÉî¶È
+                bucket_num++;       //å½“æœ‰æº¢å‡ºæ—¶ï¼Œæ‹†åˆ†å¹¶é‡æ–°åˆ†é…æ¡¶ï¼Œå¦‚æœ‰å¿…è¦å¢åŠ å…¨å±€æ·±åº¦
                 auto newBuc = make_shared<Bucket>(cur->local_depth);
 
                 typename map<K, V>::iterator it;
@@ -112,7 +112,7 @@ namespace scudb {
                 }
             }
             idx = getIdx(key);
-            cur = buckets[idx];   //ÔÚ¹şÏ£±íÖĞ²åÈë<key,value>ÌõÄ¿
+            cur = buckets[idx];   //åœ¨å“ˆå¸Œè¡¨ä¸­æ’å…¥<key,value>æ¡ç›®
         }
     }
 
@@ -122,3 +122,8 @@ namespace scudb {
     template class ExtendibleHash<int, std::list<int>::iterator>;
     template class ExtendibleHash<int, int>;
 }
+Footer
+Â© 2022 GitHub, Inc.
+Footer navigation
+Terms
+Priv
