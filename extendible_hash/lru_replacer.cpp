@@ -4,71 +4,74 @@
 namespace scudb {
 
     template <typename T> LRUReplacer<T>::LRUReplacer() {
-        head = make_shared<Node>();
-        tail = make_shared<Node>();
-        head->next = tail;
-        tail->prev = head;
+        head_node = make_shared<Node>();
+        tail_node = make_shared<Node>();
+        head_node->next_node = tail_node;
+        tail_node->prev_node = head_node;
     }
 
     template <typename T> LRUReplacer<T>::~LRUReplacer() {}
 
     template <typename T> void LRUReplacer<T>::Insert(const T& value) {
         lock_guard<mutex> lck(latch);
+        
         shared_ptr<Node> cur;
+        
         if (map.find(value) != map.end()) {
             cur = map[value];
             shared_ptr<Node> prev = cur->prev;
             shared_ptr<Node> succ = cur->next;
-            prev->next = succ;
-            succ->prev = prev;
+            prev->next_node = succ;
+            succ->prev_node = prev;
         }
         else {
             cur = make_shared<Node>(value);
         }
-        shared_ptr<Node> fir = head->next;
-        cur->next = fir;
-        fir->prev = cur;
-        cur->prev = head;
-        head->next = cur;
-        map[value] = cur;   //½«Öµ²åÈëLRU
+        shared_ptr<Node> fir = head_node->next_node;
+        cur_node->next_node = fir_node;
+        fir_node->prev_node = cur_node;
+        cur_node->prev_node = head_node;
+        head_node->next_node = cur_node;
+        node_map[value] = cur_node;   //å°†å€¼æ’å…¥LRU
         return;
     }
 
     /* 
-     *Èç¹ûLRU·Ç¿Õ£¬´ÓLRUµ¯³öÍ·³ÉÔ±µ½²ÎÊý¡°value¡±£¬²¢ÇÒ·µ»Øtrue¡£Èç¹ûLRUÎª¿Õ£¬·µ»Øfalse
+     *å¦‚æžœLRUéžç©ºï¼Œä»ŽLRUå¼¹å‡ºå¤´æˆå‘˜åˆ°å‚æ•°â€œvalueâ€ï¼Œå¹¶ä¸”è¿”å›žtrueã€‚å¦‚æžœLRUä¸ºç©ºï¼Œè¿”å›žfalse
      */
     template <typename T> bool LRUReplacer<T>::Victim(T& value) {
         lock_guard<mutex> lck(latch);
         if (map.empty()) {
             return false;
         }
-        shared_ptr<Node> last = tail->prev;
-        tail->prev = last->prev;
-        last->prev->next = tail;
-        value = last->val;
-        map.erase(last->val);
+        shared_ptr<Node> last_node = tail_node->prev_node;
+        tail_node->prev_node = last_node->prev_node;
+        last_node->prev_node->next_node = tail_node;
+        value = last_node->val_node;
+        node_map.erase(last->val);
         return true;
     }
 
     /*
-     * ´ÓLRUÖÐÉ¾³ýÖµ¡£Èç¹ûÒÆ³ý³É¹¦£¬·µ»Øtrue£¬·ñÔò·µ»Øfalse
+     * ä»ŽLRUä¸­åˆ é™¤å€¼ã€‚å¦‚æžœç§»é™¤æˆåŠŸï¼Œè¿”å›žtrueï¼Œå¦åˆ™è¿”å›žfalse
      */
     template <typename T> bool LRUReplacer<T>::Erase(const T& value) {
         lock_guard<mutex> lck(latch);
         if (map.find(value) != map.end()) {
-            shared_ptr<Node> cur = map[value];
-            cur->prev->next = cur->next;
-            cur->next->prev = cur->prev;
+            shared_ptr<Node> cur_node = node_map[value];
+            cur_node->prev_node->next_node = cur_node->next_node;
+            cur_node->next_node->prev_node = cur_node->prev_node;
         }
-        return map.erase(value);
+        return node_map.erase(value);
     }
 
     template <typename T> size_t LRUReplacer<T>::Size() {
         lock_guard<mutex> lck(latch);
-        return map.size();
+        return node_map.size();
     }
 
     template class LRUReplacer<Page*>;
+    
     template class LRUReplacer<int>;
 
 } 
