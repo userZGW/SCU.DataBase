@@ -26,14 +26,19 @@ namespace scudb {
         bool DeletePage(page_id_t page_id);
 
     private:
-        size_t pool_size_; // »º³å³ØÖĞµÄÒ³Êı
-        Page* pages_;      // Ò³ÃæÊı×é
+        size_t pool_size_; // ç¼“å†²æ± ä¸­çš„é¡µæ•°
+        Page* pages_;      // é¡µé¢æ•°ç»„
         DiskManager* disk_manager_;
         LogManager* log_manager_;
-        HashTable<page_id_t, Page*>* page_table_; // ¸ú×ÙÒ³Ãæ
-        Replacer<Page*>* replacer_;   // ²éÕÒÒªÌæ»»µÄÎ´¹Ì¶¨Ò³
-        std::list<Page*>* free_list_; // ÕÒµ½Ò»¸ö¿ÕÏĞµÄÒ³Ãæ½øĞĞÌæ»»
-        std::mutex latch_;             // ±£»¤¹²ÏíÊı¾İ½á¹¹
+        HashTable<page_id_t, Page*>* page_table_; // è·Ÿè¸ªé¡µé¢
+        Replacer<Page*>* replacer_;   // æŸ¥æ‰¾è¦æ›¿æ¢çš„æœªå›ºå®šé¡µ
+        std::list<Page*>* free_list_; // æ‰¾åˆ°ä¸€ä¸ªç©ºé—²çš„é¡µé¢è¿›è¡Œæ›¿æ¢
+        std::mutex latch_;             // ä¿æŠ¤å…±äº«æ•°æ®ç»“æ„
         Page* GetVictimPage();
     };
 } 
+Footer
+Â© 2022 GitHub, Inc.
+Footer navigation
+Terms
+Privacy
