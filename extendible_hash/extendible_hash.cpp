@@ -122,8 +122,3 @@ namespace scudb {
     template class ExtendibleHash<int, std::list<int>::iterator>;
     template class ExtendibleHash<int, int>;
 }
-Footer
-© 2022 GitHub, Inc.
-Footer navigation
-Terms
-Priv
