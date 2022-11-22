@@ -9,10 +9,10 @@ namespace scudb {
         pages_ = new Page[pool_size_];
         page_table_ = new ExtendibleHash<page_id_t, Page*>(BUCKET_SIZE);
         replacer_ = new LRUReplacer<Page*>;
-        free_list_ = new std::list<Page*>;    // ���ڻ���ص������ڴ�ռ�
+        free_list_ = new std::list<Page*>;    // 用于缓冲池的连续内存空间
 
         for (size_t i = 0; i < pool_size_; ++i) {
-            free_list_->push_back(&pages_[i]);   // �����е�ҳ���������б�
+            free_list_->push_back(&pages_[i]);   // 把所有的页面放入空闲列表
         }
     }
 
@@ -24,15 +24,16 @@ namespace scudb {
     }
 
     /**
-     * 1. ������ϣ��
-     *  1.1 ������ڣ���סҳ�沢��������
-     *  1.2 ��������ڣ���free list��lru replacer���ҵ�һ���滻��Ŀ
-     * 2. ���ѡ���滻����Ŀ����ģ�����д�ش���
-     * 3. ��ɢ�б���ɾ����ҳ�����Ŀ����Ϊ��ҳ�������Ŀ
-     * 4.����ҳ��Ԫ���ݣ��Ӵ����ļ���ȡҳ�����ݲ�����ҳ��ָ��
+     * 1. 搜索哈希表
+     *  1.1 如果存在，钉住页面并立即返回
+     *  1.2 如果不存在，从free list或lru replacer中找到一个替换条目
+     * 2. 如果选择替换的条目是脏的，则将其写回磁盘
+     * 3. 从散列表中删除旧页面的条目，并为新页面插入条目
+     * 4.更新页面元数据，从磁盘文件读取页面内容并返回页面指针
      */
     Page* BufferPoolManager::FetchPage(page_id_t page_id) {
         lock_guard<mutex> lck(latch_);
+        
         Page* tar = nullptr;
         if (page_table_->Find(page_id, tar)) { //1.1
             tar->pin_count_++;
@@ -59,8 +60,8 @@ namespace scudb {
     }
 
     /*
-     *������ż���>Ϊ0����ݼ����������Ϊ0������Ż�
-     *����ڴ˵���֮ǰ���ż���<=0���򷵻�false���Ƿ�dirty:���ô�ҳ���dirty��־
+     *如果引脚计数>为0，则递减它，如果它为0，则将其放回
+     *如果在此调用之前引脚计数<=0，则返回false。是否dirty:设置此页面的dirty标志
      */
     bool BufferPoolManager::UnpinPage(page_id_t page_id, bool is_dirty) {
         lock_guard<mutex> lck(latch_);
@@ -81,10 +82,11 @@ namespace scudb {
     }
 
     /*
-     * ���ڽ�����ص��ض�ҳˢ�µ����̡����ҳ����û���ҵ�ҳ���Ƿ�Ӧ�õ��ô��̹�������дҳ����������false
+     * 用于将缓冲池的特定页刷新到磁盘。如果页表中没有找到页，是否应该调用磁盘管理器的写页方法，返回false
      */
     bool BufferPoolManager::FlushPage(page_id_t page_id) {
         lock_guard<mutex> lck(latch_);
+       
         Page* tar = nullptr;
         page_table_->Find(page_id, tar);
         if (tar == nullptr || tar->page_id_ == INVALID_PAGE_ID) {
@@ -99,14 +101,16 @@ namespace scudb {
     }
 
     /**
-     *�û�Ӧ�õ��ô˷�����ɾ��ҳ�档������̽����ô��̹��������ͷ�ҳ�档���ȣ������page 
-     *���з�����page������ع�����Ӧ�ø����page����ɾ������Ŀ������ҳ��Ԫ���ݲ����ӻؿ�
-     *���б�����Σ����ô��̹�������DeallocatePage()�����Ӵ����ļ���ɾ���������ҳ������
-     *���������ż���!= 0������false
+     *用户应该调用此方法来删除页面。这个例程将调用磁盘管理器来释放页面。首先，如果在page 
+     *表中发现了page，缓冲池管理器应该负责从page表中删除该条目，重置页面元数据并添加回空
+     *闲列表。其次，调用磁盘管理器的DeallocatePage()方法从磁盘文件中删除。如果在页表中找
+     *到，但引脚计数!= 0，返回false
      */
     bool BufferPoolManager::DeletePage(page_id_t page_id) {
         lock_guard<mutex> lck(latch_);
+        
         Page* tar = nullptr;
+        
         page_table_->Find(page_id, tar);
         if (tar != nullptr) {
             if (tar->GetPinCount() > 0) {
@@ -123,10 +127,10 @@ namespace scudb {
     }
 
     /**
-     *�����Ҫ������ҳ�棬�û�Ӧ�õ��ô˷�����������̽����ô��̹�����
-     *������ҳ�档����ع�����Ӧ�ø���ӿ����б���lru�滻����ѡ��һ����
-     *��ҳ��(ע��:�������ȴӿ����б���ѡ��)��������ҳ���Ԫ���ݣ������
-     *�沢��ҳ����������Ӧ����Ŀ��������е�����ҳ�涼���̶����򷵻�nullptr
+     *如果需要创建新页面，用户应该调用此方法。这个例程将调用磁盘管理器
+     *来分配页面。缓冲池管理器应该负责从空闲列表或lru替换器中选择一个替
+     *换页面(注意:总是首先从空闲列表中选择)，更新新页面的元数据，清空内
+     *存并在页表中添加相应的条目。如果池中的所有页面都被固定，则返回nullptr
      */
     Page* BufferPoolManager::NewPage(page_id_t& page_id) {
         lock_guard<mutex> lck(latch_);
