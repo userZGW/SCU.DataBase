@@ -11,11 +11,7 @@ namespace scudb {
 /*****************************************************************************
  * HELPER METHODS AND UTILITIES
  *****************************************************************************/
-/*
- * Init method after creating a new internal page
- * Including set page type, set current size, set page id, set parent id and set
- * max page size
- */
+
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_INTERNAL_PAGE_TYPE::Init(page_id_t page_id,
                                           page_id_t parent_id) {
@@ -25,10 +21,8 @@ void B_PLUS_TREE_INTERNAL_PAGE_TYPE::Init(page_id_t page_id,
   SetParentPageId(parent_id);
   SetMaxSize((PAGE_SIZE- sizeof(BPlusTreeInternalPage))/sizeof(MappingType) - 1); //minus 1 for first invalid key
 }
-/*
- * Helper method to get/set the key associated with input "index"(a.k.a
- * array offset)
- */
+
+  
 INDEX_TEMPLATE_ARGUMENTS
 KeyType B_PLUS_TREE_INTERNAL_PAGE_TYPE::KeyAt(int index) const {
   // replace with your own code
@@ -42,10 +36,8 @@ void B_PLUS_TREE_INTERNAL_PAGE_TYPE::SetKeyAt(int index, const KeyType &key) {
   array[index].first = key;
 }
 
-/*
- * Helper method to find and return array index(or offset), so that its value
- * equals to input "value"
- */
+
+
 INDEX_TEMPLATE_ARGUMENTS
 int B_PLUS_TREE_INTERNAL_PAGE_TYPE::ValueIndex(const ValueType &value) const {
   for (int i = 0; i < GetSize(); i++) {
@@ -55,10 +47,7 @@ int B_PLUS_TREE_INTERNAL_PAGE_TYPE::ValueIndex(const ValueType &value) const {
   return -1;
 }
 
-/*
- * Helper method to get the value associated with input "index"(a.k.a array
- * offset)
- */
+
 INDEX_TEMPLATE_ARGUMENTS
 ValueType B_PLUS_TREE_INTERNAL_PAGE_TYPE::ValueAt(int index) const {
   assert(index >= 0 && index < GetSize());
@@ -68,11 +57,8 @@ ValueType B_PLUS_TREE_INTERNAL_PAGE_TYPE::ValueAt(int index) const {
 /*****************************************************************************
  * LOOKUP
  *****************************************************************************/
-/*
- * Find and return the child pointer(page_id) which points to the child page
- * that contains input "key"
- * Start the search from the second key(the first key should always be invalid)
- */
+
+
 INDEX_TEMPLATE_ARGUMENTS
 ValueType
 B_PLUS_TREE_INTERNAL_PAGE_TYPE::Lookup(const KeyType &key,
@@ -90,12 +76,8 @@ B_PLUS_TREE_INTERNAL_PAGE_TYPE::Lookup(const KeyType &key,
 /*****************************************************************************
  * INSERTION
  *****************************************************************************/
-/*
- * Populate new root page with old_value + new_key & new_value
- * When the insertion cause overflow from leaf page all the way upto the root
- * page, you should create a new root page and populate its elements.
- * NOTE: This method is only called within InsertIntoParent()(b_plus_tree.cpp)
- */
+
+  
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_INTERNAL_PAGE_TYPE::PopulateNewRoot(
     const ValueType &old_value, const KeyType &new_key,
@@ -107,11 +89,8 @@ void B_PLUS_TREE_INTERNAL_PAGE_TYPE::PopulateNewRoot(
   SetSize(2);
 
 }
-/*
- * Insert new_key & new_value pair right after the pair with its value ==
- * old_value
- * @return:  new size after insertion
- */
+
+  
 INDEX_TEMPLATE_ARGUMENTS
 int B_PLUS_TREE_INTERNAL_PAGE_TYPE::InsertNodeAfter(
     const ValueType &old_value, const KeyType &new_key,
@@ -132,9 +111,7 @@ int B_PLUS_TREE_INTERNAL_PAGE_TYPE::InsertNodeAfter(
 /*****************************************************************************
  * SPLIT
  *****************************************************************************/
-/*
- * Remove half of key & value pairs from this page to "recipient" page
- */
+
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_INTERNAL_PAGE_TYPE::MoveHalfTo(
     BPlusTreeInternalPage *recipient,
@@ -166,11 +143,7 @@ void B_PLUS_TREE_INTERNAL_PAGE_TYPE::CopyHalfFrom(
 /*****************************************************************************
  * REMOVE
  *****************************************************************************/
-/*
- * Remove the key & value pair in internal page according to input index(a.k.a
- * array offset)
- * NOTE: store key&value pair continuously after deletion
- */
+
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_INTERNAL_PAGE_TYPE::Remove(int index) {
   assert(index >= 0 && index < GetSize());
@@ -180,10 +153,7 @@ void B_PLUS_TREE_INTERNAL_PAGE_TYPE::Remove(int index) {
   IncreaseSize(-1);
 }
 
-/*
- * Remove the only key & value pair in internal page and return the value
- * NOTE: only call this method within AdjustRoot()(in b_plus_tree.cpp)
- */
+
 INDEX_TEMPLATE_ARGUMENTS
 ValueType B_PLUS_TREE_INTERNAL_PAGE_TYPE::RemoveAndReturnOnlyChild() {
   ValueType ret = ValueAt(0);
@@ -194,10 +164,7 @@ ValueType B_PLUS_TREE_INTERNAL_PAGE_TYPE::RemoveAndReturnOnlyChild() {
 /*****************************************************************************
  * MERGE
  *****************************************************************************/
-/*
- * Remove all of key & value pairs from this page to "recipient" page, then
- * update relavent key & value pair in its parent page.
- */
+
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_INTERNAL_PAGE_TYPE::MoveAllTo(
     BPlusTreeInternalPage *recipient, int index_in_parent,
@@ -236,10 +203,7 @@ void B_PLUS_TREE_INTERNAL_PAGE_TYPE::CopyAllFrom(
 /*****************************************************************************
  * REDISTRIBUTE
  *****************************************************************************/
-/*
- * Remove the first key & value pair from this page to tail of "recipient"
- * page, then update relavent key & value pair in its parent page.
- */
+
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_INTERNAL_PAGE_TYPE::MoveFirstToEndOf(
     BPlusTreeInternalPage *recipient,
@@ -271,10 +235,7 @@ void B_PLUS_TREE_INTERNAL_PAGE_TYPE::CopyLastFrom(
   IncreaseSize(1);
 }
 
-/*
- * Remove the last key & value pair from this page to head of "recipient"
- * page, then update relavent key & value pair in its parent page.
- */
+
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_INTERNAL_PAGE_TYPE::MoveLastToFrontOf(
     BPlusTreeInternalPage *recipient, int parent_index,
