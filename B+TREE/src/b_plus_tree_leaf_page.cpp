@@ -15,11 +15,7 @@ namespace scudb {
  * HELPER METHODS AND UTILITIES
  *****************************************************************************/
 
-/**
- * Init method after creating a new leaf page
- * Including set page type, set current size to zero, set page id/parent id, set
- * next page id and set max size
- */
+
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_LEAF_PAGE_TYPE::Init(page_id_t page_id, page_id_t parent_id) {
   SetPageType(IndexPageType::LEAF_PAGE);
@@ -31,9 +27,7 @@ void B_PLUS_TREE_LEAF_PAGE_TYPE::Init(page_id_t page_id, page_id_t parent_id) {
   SetMaxSize((PAGE_SIZE - sizeof(BPlusTreeLeafPage))/sizeof(MappingType) - 1); //minus 1 for insert first then split
 }
 
-/**
- * Helper methods to set/get next page id
- */
+
 INDEX_TEMPLATE_ARGUMENTS
 page_id_t B_PLUS_TREE_LEAF_PAGE_TYPE::GetNextPageId() const {
   return next_page_id_;
@@ -42,10 +36,7 @@ page_id_t B_PLUS_TREE_LEAF_PAGE_TYPE::GetNextPageId() const {
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_LEAF_PAGE_TYPE::SetNextPageId(page_id_t next_page_id) {next_page_id_ = next_page_id;}
 
-/**
- * Helper method to find the first index i so that array[i].first >= key
- * NOTE: This method is only used when generating index iterator
- */
+
 INDEX_TEMPLATE_ARGUMENTS
 int B_PLUS_TREE_LEAF_PAGE_TYPE::KeyIndex(
     const KeyType &key, const KeyComparator &comparator) const {
@@ -59,33 +50,23 @@ int B_PLUS_TREE_LEAF_PAGE_TYPE::KeyIndex(
   return ed + 1;
 }
 
-/*
- * Helper method to find and return the key associated with input "index"(a.k.a
- * array offset)
- */
+
 INDEX_TEMPLATE_ARGUMENTS
 KeyType B_PLUS_TREE_LEAF_PAGE_TYPE::KeyAt(int index) const {
   assert(index >= 0 && index < GetSize());
   return array[index].first;
 }
 
-/*
- * Helper method to find and return the key & value pair associated with input
- * "index"(a.k.a array offset)
- */
+
+
 INDEX_TEMPLATE_ARGUMENTS
 const MappingType &B_PLUS_TREE_LEAF_PAGE_TYPE::GetItem(int index) {
   assert(index >= 0 && index < GetSize());
   return array[index];
 }
 
-/*****************************************************************************
- * INSERTION
- *****************************************************************************/
-/*
- * Insert key & value pair into leaf page ordered by key
- * @return  page size after insertion
- */
+
+
 INDEX_TEMPLATE_ARGUMENTS
 int B_PLUS_TREE_LEAF_PAGE_TYPE::Insert(const KeyType &key,
                                        const ValueType &value,
@@ -103,12 +84,8 @@ int B_PLUS_TREE_LEAF_PAGE_TYPE::Insert(const KeyType &key,
   return curSize;
 }
 
-/*****************************************************************************
- * SPLIT
- *****************************************************************************/
-/*
- * Remove half of key & value pairs from this page to "recipient" page
- */
+
+  
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveHalfTo(
     BPlusTreeLeafPage *recipient,
@@ -156,12 +133,7 @@ bool B_PLUS_TREE_LEAF_PAGE_TYPE::Lookup(const KeyType &key, ValueType &value,
 /*****************************************************************************
  * REMOVE
  *****************************************************************************/
-/*
- * First look through leaf page to see whether delete key exist or not. If
- * exist, perform deletion, otherwise return immdiately.
- * NOTE: store key&value pair continuously after deletion
- * @return   page size after deletion
- */
+
 INDEX_TEMPLATE_ARGUMENTS
 int B_PLUS_TREE_LEAF_PAGE_TYPE::RemoveAndDeleteRecord(
     const KeyType &key, const KeyComparator &comparator) {
@@ -180,10 +152,7 @@ int B_PLUS_TREE_LEAF_PAGE_TYPE::RemoveAndDeleteRecord(
 /*****************************************************************************
  * MERGE
  *****************************************************************************/
-/*
- * Remove all of key & value pairs from this page to "recipient" page, then
- * update next page id
- */
+
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveAllTo(BPlusTreeLeafPage *recipient,
                                            int, BufferPoolManager *) {
@@ -208,10 +177,7 @@ void B_PLUS_TREE_LEAF_PAGE_TYPE::CopyAllFrom(MappingType *items, int size) {}
 /*****************************************************************************
  * REDISTRIBUTE
  *****************************************************************************/
-/*
- * Remove the first key & value pair from this page to "recipient" page, then
- * update relavent key & value pair in its parent page.
- */
+
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveFirstToEndOf(
     BPlusTreeLeafPage *recipient,
@@ -233,10 +199,8 @@ void B_PLUS_TREE_LEAF_PAGE_TYPE::CopyLastFrom(const MappingType &item) {
   array[GetSize()] = item;
   IncreaseSize(1);
 }
-/*
- * Remove the last key & value pair from this page to "recipient" page, then
- * update relavent key & value pair in its parent page.
- */
+
+
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_LEAF_PAGE_TYPE::MoveLastToFrontOf(
     BPlusTreeLeafPage *recipient, int parentIndex,
